@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: notification-service
+
+server:
+  port: 8080
+
+# Actuator: health and info for now; add metrics later
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Placeholder for future channel config (SMS, Email, Push, WhatsApp)
+# notification:
+#   channels:
+#     email:
+#       enabled: true
+#     sms:
+#       enabled: false
+#     push:
+#       enabled: false
+#     whatsapp:
+#       enabled: false
