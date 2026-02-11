@@ -14,21 +14,51 @@ The full architecture and implementation plan is in **[docs/NOTIFICATION_SERVICE
 # Build
 mvn clean package -DskipTests
 
-# Run
+# Run (no Kafka required; uses in-process sending by default)
 mvn spring-boot:run
 ```
 
-The app starts on port 8080. Health check: `GET http://localhost:8080/actuator/health`
+The app starts on port 8080 with an in-memory H2 database and sample templates.
+
+- **Health:** `GET http://localhost:8080/actuator/health`
+- **H2 console:** `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:notifications`, user: `sa`, password empty)
+
+### Send a notification
+
+```bash
+curl -X POST http://localhost:8080/api/v1/notifications \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateId": "welcome-email",
+    "channels": ["EMAIL"],
+    "recipients": [{"channel": "EMAIL", "address": "user@example.com"}],
+    "variables": {"userName": "John", "loginUrl": "https://app.example.com/login"}
+  }'
+```
+
+Response: `{"notificationId":"...","status":"ACCEPTED"}`. With dummy SMTP/SMS/Push/WhatsApp keys, the actual send will fail at the provider, but the flow (template resolution, channel dispatch, status update) runs end-to-end.
 
 ## Project Structure
 
 ```
 notification-service/
 ├── docs/
-│   └── NOTIFICATION_SERVICE_PLAN.md   # Architecture & implementation plan
-├── src/main/java/.../NotificationServiceApplication.java
+│   └── NOTIFICATION_SERVICE_PLAN.md
+├── src/main/java/com/example/notificationservice/
+│   ├── api/              # REST controller, DTOs, exception handler
+│   ├── channel/           # NotificationChannel interface, registry, SendResult
+│   ├── channel/email/     # Email (Spring Mail)
+│   ├── channel/sms/       # SMS (Twilio-style)
+│   ├── channel/push/      # Push (FCM)
+│   ├── channel/whatsapp/  # WhatsApp (Meta API)
+│   ├── config/            # Kafka, cache
+│   ├── domain/            # Notification, Template, enums
+│   ├── messaging/         # Kafka producer/consumer, event
+│   ├── repository/        # JPA repositories
+│   └── service/           # TemplateService, Orchestrator, InProcessSender
 ├── src/main/resources/
-│   └── application.yml
+│   ├── application.yml    # Dummy keys and channel config
+│   └── data.sql           # Sample templates
 ├── README.md
 └── pom.xml
 ```

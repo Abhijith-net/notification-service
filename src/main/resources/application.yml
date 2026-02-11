@@ -1,11 +1,72 @@
 spring:
   application:
     name: notification-service
+  datasource:
+    url: jdbc:h2:mem:notifications;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+  sql:
+    init:
+      mode: always
+  # Dummy mail (no real sends without real SMTP)
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: dummy-user
+    password: dummy-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: 8080
 
-# Actuator: health and info for now; add metrics later
+# Notification: queue disabled by default so app runs without Kafka
+notification:
+  queue:
+    enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    topic: notification-send
+    consumer-group: notification-service
+  consumer:
+    max-retries: 3
+  channels:
+    email:
+      enabled: true
+      from: noreply@example.com
+    sms:
+      enabled: true
+      account-sid: ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      auth-token: dummy-auth-token
+      from-number: "+15551234567"
+      api-url: https://api.twilio.com/2010-04-01/Accounts
+    push:
+      enabled: true
+      fcm-server-key: dummy-fcm-server-key
+      fcm-url: https://fcm.googleapis.com/fcm/send
+    whatsapp:
+      enabled: true
+      access-token: dummy-whatsapp-access-token
+      phone-number-id: "123456789"
+      api-url: https://graph.facebook.com/v18.0
+
 management:
   endpoints:
     web:
@@ -14,15 +75,3 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-
-# Placeholder for future channel config (SMS, Email, Push, WhatsApp)
-# notification:
-#   channels:
-#     email:
-#       enabled: true
-#     sms:
-#       enabled: false
-#     push:
-#       enabled: false
-#     whatsapp:
-#       enabled: false
